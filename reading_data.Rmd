@@ -1,0 +1,90 @@
+---
+title: "Reading data from the web"
+output: github_document
+date: "2024-10-24"
+---
+
+```{r}
+
+library(tidyverse)
+
+library(rvest)
+library (httr)
+
+knitr::opts_chunk$set(
+  fig.width = 6, 
+  fig.asp = 0.6, 
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+          
+options(
+  ggplot2.continuous.colour = "viridis", 
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_color_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+## Scrape a table from a website.
+
+This looks at data from the national survey on drug use and health.It uses a function called read_html, which is a function in rvest. 
+
+I want the first table from [this page] (http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm)
+
+```{r}
+url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
+
+drug_use_html = read_html(url)
+drug_use_html
+```
+How to extract the tables from this site. I start with getting information about how the table is set up. CSS is a component of html that has info about it's structure. Notice it pulls out 15 rows for the 15 tables in the website. 
+```{r}
+drug_use_html %>% 
+  html_nodes(css = "table")
+html_nodes
+```
+I can also pull out the individual tables here. See the 15 printed below.
+
+```{r}
+drug_use_html %>% 
+  html_nodes(css = "table") %>% 
+  html_table()
+ 
+```
+## Star Wars Movie info
+
+How to get data from a website [here](https://www.imdb.com/list/ls070150896/). 
+
+Set the link to url for ease
+```{r}
+url = "https://www.imdb.com/list/ls070150896/"
+
+star_wars_movie_html = read_html(url)
+star_wars_movie_html
+```
+  How to grab the elements of interest. You use the `selectr` function, and this information can be pulled by clicking on the selectr bookmark link in this ur, https://selectorgadget.com. Once you add it, go to the star wars website itself, then open you bookmarks tab, and click the selectr logo and then you can start to hoover over titles or images of interest. I hovered over the first title and it knew to obtain all titles in the document. Make sure that only info you want to be part of the code is highlighted-- it may highlight information on the side of the page  that's not necessary. If you see something you don't want, click it so it looks red. When I click the first title, a small box appears in the lower right corner that tells me how the webpage is categorizing that css information. I enter that into html_nodes. And see it will pull out all the titles! In the end I told it to only put the text out. You can do that for any variables. Then finally I will make this a data frame. 
+
+```{r}
+title_vec = 
+  star_wars_movie_html %>% 
+  html_nodes(css = ".ipc-title-link-wrapper .ipc-title__text") %>% 
+  html_text()
+title_vec
+
+metascore_vec = 
+  star_wars_movie_html %>% 
+  html_nodes(css = ".metacritic-score-box") %>% 
+  html_text()
+metascore_vec
+
+star_wars_movie_html_df = 
+  tibble(
+    title = title_vec, 
+    rating = metascore_vec
+  )
+star_wars_movie_html_df
+```
+
