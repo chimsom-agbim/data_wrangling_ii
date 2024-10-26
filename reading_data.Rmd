@@ -87,4 +87,35 @@ star_wars_movie_html_df =
   )
 star_wars_movie_html_df
 ```
+Using APIs to get information from servers 
 
+## Get water data
+
+Water data is coming from NYC open data https://data.cityofnewyork.us/Environment/Water-Consumption-in-the-City-of-New-York/ia2d-e54m/about_data. 
+This is coming from an API. We go to the website, click actions, click API, change the file type to CSV and then copy that link to clipboard. Paste that link into the GET function-- basically you are telling it to get information from that data file. 
+We run the content function in order to get that info into a tibble.
+```{r}
+nyc_water = 
+  GET("https://data.cityofnewyork.us/resource/ia2d-e54m.csv") %>% 
+  content()
+nyc_water
+```
+
+## BRFSS Data set 
+
+Ok, this time we are analyzing data from the CDC. https://chronicdata.cdc.gov/Behavioral-Risk-Factors/Behavioral-Risk-Factors-Selected-Metropolitan-Area/acme-vg9e/about_data. Follow the same steps as above. Parsed makes it a bit cleaner. So if you look on the website, they say they only return 1,000 rows by default, which we see in the table. 
+
+```{r}
+brfss_2010 = 
+  GET("https://chronicdata.cdc.gov/resource/acme-vg9e.csv") %>% 
+  content("parsed")
+brfss_2010
+```
+I can add a query and use $limit to increase the output. Yay! it pulled out more data now. 
+
+```{r}
+brfss_2010 = 
+  GET("https://chronicdata.cdc.gov/resource/acme-vg9e.csv", query = list("$limit" = 5000)) %>% 
+  content("parsed")
+brfss_2010
+```

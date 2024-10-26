@@ -103,7 +103,7 @@ html_nodes
     ## {
     ##     html_elements(...)
     ## }
-    ## <bytecode: 0x14aa5b3e0>
+    ## <bytecode: 0x110d59350>
     ## <environment: namespace:rvest>
 
 I can also pull out the individual tables here. See the 15 printed
@@ -491,3 +491,141 @@ star_wars_movie_html_df
     ## 7 7. Star Wars: Episode VII - The Force Awakens     80    
     ## 8 8. Star Wars: Episode VIII - The Last Jedi        84    
     ## 9 9. Star Wars: Episode IX - The Rise of Skywalker  53
+
+Using APIs to get information from servers
+
+## Get water data
+
+Water data is coming from NYC open data
+<https://data.cityofnewyork.us/Environment/Water-Consumption-in-the-City-of-New-York/ia2d-e54m/about_data>.
+This is coming from an API. We go to the website, click actions, click
+API, change the file type to CSV and then copy that link to clipboard.
+Paste that link into the GET function– basically you are telling it to
+get information from that data file. We run the content function in
+order to get that info into a tibble.
+
+``` r
+nyc_water = 
+  GET("https://data.cityofnewyork.us/resource/ia2d-e54m.csv") %>% 
+  content()
+```
+
+    ## Rows: 45 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## dbl (4): year, new_york_city_population, nyc_consumption_million_gallons_per...
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
+nyc_water
+```
+
+    ## # A tibble: 45 × 4
+    ##     year new_york_city_population nyc_consumption_milli…¹ per_capita_gallons_p…²
+    ##    <dbl>                    <dbl>                   <dbl>                  <dbl>
+    ##  1  1979                  7102100                    1512                    213
+    ##  2  1980                  7071639                    1506                    213
+    ##  3  1981                  7089241                    1309                    185
+    ##  4  1982                  7109105                    1382                    194
+    ##  5  1983                  7181224                    1424                    198
+    ##  6  1984                  7234514                    1465                    203
+    ##  7  1985                  7274054                    1326                    182
+    ##  8  1986                  7319246                    1351                    185
+    ##  9  1987                  7342476                    1447                    197
+    ## 10  1988                  7353719                    1484                    202
+    ## # ℹ 35 more rows
+    ## # ℹ abbreviated names: ¹​nyc_consumption_million_gallons_per_day,
+    ## #   ²​per_capita_gallons_per_person_per_day
+
+## BRFSS Data set
+
+Ok, this time we are analyzing data from the CDC.
+<https://chronicdata.cdc.gov/Behavioral-Risk-Factors/Behavioral-Risk-Factors-Selected-Metropolitan-Area/acme-vg9e/about_data>.
+Follow the same steps as above. Parsed makes it a bit cleaner. So if you
+look on the website, they say they only return 1,000 rows by default,
+which we see in the table.
+
+``` r
+brfss_2010 = 
+  GET("https://chronicdata.cdc.gov/resource/acme-vg9e.csv") %>% 
+  content("parsed")
+```
+
+    ## Rows: 1000 Columns: 23
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (16): locationabbr, locationdesc, class, topic, question, response, data...
+    ## dbl  (6): year, sample_size, data_value, confidence_limit_low, confidence_li...
+    ## lgl  (1): locationid
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
+brfss_2010
+```
+
+    ## # A tibble: 1,000 × 23
+    ##     year locationabbr locationdesc     class topic question response sample_size
+    ##    <dbl> <chr>        <chr>            <chr> <chr> <chr>    <chr>          <dbl>
+    ##  1  2010 AL           AL - Mobile Cou… Heal… Over… How is … Excelle…          91
+    ##  2  2010 AL           AL - Tuscaloosa… Heal… Over… How is … Excelle…          58
+    ##  3  2010 AL           AL - Jefferson … Heal… Over… How is … Excelle…          94
+    ##  4  2010 AL           AL - Mobile Cou… Heal… Over… How is … Very go…         177
+    ##  5  2010 AL           AL - Jefferson … Heal… Over… How is … Very go…         148
+    ##  6  2010 AL           AL - Tuscaloosa… Heal… Over… How is … Very go…         109
+    ##  7  2010 AL           AL - Jefferson … Heal… Over… How is … Good             208
+    ##  8  2010 AL           AL - Mobile Cou… Heal… Over… How is … Good             224
+    ##  9  2010 AL           AL - Tuscaloosa… Heal… Over… How is … Good             171
+    ## 10  2010 AL           AL - Mobile Cou… Heal… Over… How is … Fair             120
+    ## # ℹ 990 more rows
+    ## # ℹ 15 more variables: data_value <dbl>, confidence_limit_low <dbl>,
+    ## #   confidence_limit_high <dbl>, display_order <dbl>, data_value_unit <chr>,
+    ## #   data_value_type <chr>, data_value_footnote_symbol <chr>,
+    ## #   data_value_footnote <chr>, datasource <chr>, classid <chr>, topicid <chr>,
+    ## #   locationid <lgl>, questionid <chr>, respid <chr>, geolocation <chr>
+
+I can add a query and use \$limit to increase the output. Yay! it pulled
+out more data now.
+
+``` r
+brfss_2010 = 
+  GET("https://chronicdata.cdc.gov/resource/acme-vg9e.csv", query = list("$limit" = 5000)) %>% 
+  content("parsed")
+```
+
+    ## Rows: 5000 Columns: 23
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (16): locationabbr, locationdesc, class, topic, question, response, data...
+    ## dbl  (6): year, sample_size, data_value, confidence_limit_low, confidence_li...
+    ## lgl  (1): locationid
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
+brfss_2010
+```
+
+    ## # A tibble: 5,000 × 23
+    ##     year locationabbr locationdesc     class topic question response sample_size
+    ##    <dbl> <chr>        <chr>            <chr> <chr> <chr>    <chr>          <dbl>
+    ##  1  2010 AL           AL - Jefferson … Heal… Over… How is … Excelle…          94
+    ##  2  2010 AL           AL - Tuscaloosa… Heal… Over… How is … Excelle…          58
+    ##  3  2010 AL           AL - Mobile Cou… Heal… Over… How is … Excelle…          91
+    ##  4  2010 AL           AL - Tuscaloosa… Heal… Over… How is … Very go…         109
+    ##  5  2010 AL           AL - Mobile Cou… Heal… Over… How is … Very go…         177
+    ##  6  2010 AL           AL - Jefferson … Heal… Over… How is … Very go…         148
+    ##  7  2010 AL           AL - Jefferson … Heal… Over… How is … Good             208
+    ##  8  2010 AL           AL - Tuscaloosa… Heal… Over… How is … Good             171
+    ##  9  2010 AL           AL - Mobile Cou… Heal… Over… How is … Good             224
+    ## 10  2010 AL           AL - Tuscaloosa… Heal… Over… How is … Fair              62
+    ## # ℹ 4,990 more rows
+    ## # ℹ 15 more variables: data_value <dbl>, confidence_limit_low <dbl>,
+    ## #   confidence_limit_high <dbl>, display_order <dbl>, data_value_unit <chr>,
+    ## #   data_value_type <chr>, data_value_footnote_symbol <chr>,
+    ## #   data_value_footnote <chr>, datasource <chr>, classid <chr>, topicid <chr>,
+    ## #   locationid <lgl>, questionid <chr>, respid <chr>, geolocation <chr>
