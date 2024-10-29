@@ -205,8 +205,10 @@ as.numeric(vec_sex)
 
 ## NSDUH
 
-Wow I was finally able to extract the first table from this data set! If
-you look at the set, the 12+, 12-17, 18-25 corresponds to the age range.
+This is an online database from the national survey on drug use and
+health comparison. Wow I was finally able to extract the first table
+from this data set! If you look at the set, the 12+, 12-17, 18-25
+corresponds to the age range.
 
 ``` r
 url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
@@ -398,3 +400,86 @@ data_marj
     ##  9 Total U.S. 18+   2013-2014   12.9 
     ## 10 Total U.S. 18+   2014-2015   13.4 
     ## # ℹ 550 more rows
+
+Now! Let’s say I want to get rid of the Total U.S. rows and only have
+the state-specific data. Use the filter function- you enter the `!`
+syntax to say take this out, and we are accessing the state column, and
+within those columns, you want to filter out the following row of
+characters.
+
+``` r
+data_marj = 
+  table_marj |>
+  select(-contains("P Value")) |>
+  pivot_longer(
+    -State,
+    names_to = "age_year", 
+    values_to = "percent") |>
+  separate(age_year, into = c("age", "year"), sep = "\\(") |>
+  mutate(
+    year = str_replace(year, "\\)", ""),
+    percent = str_replace(percent, "[a-c]$", ""),
+    percent = as.numeric(percent)) |>
+  filter(!(State %in% c("Total U.S.", "Northeast", "Midwest", "South", "West")))
+
+data_marj
+```
+
+    ## # A tibble: 510 × 4
+    ##    State   age   year      percent
+    ##    <chr>   <chr> <chr>       <dbl>
+    ##  1 Alabama 12+   2013-2014    9.98
+    ##  2 Alabama 12+   2014-2015    9.6 
+    ##  3 Alabama 12-17 2013-2014    9.9 
+    ##  4 Alabama 12-17 2014-2015    9.71
+    ##  5 Alabama 18-25 2013-2014   27.0 
+    ##  6 Alabama 18-25 2014-2015   26.1 
+    ##  7 Alabama 26+   2013-2014    7.1 
+    ##  8 Alabama 26+   2014-2015    6.81
+    ##  9 Alabama 18+   2013-2014    9.99
+    ## 10 Alabama 18+   2014-2015    9.59
+    ## # ℹ 500 more rows
+
+You can also use the filter function to INCLUDE only certain
+information.
+
+``` r
+data_marj =
+  data_marj %>% 
+  filter(age == "12-17") 
+data_marj
+```
+
+    ## # A tibble: 102 × 4
+    ##    State      age   year      percent
+    ##    <chr>      <chr> <chr>       <dbl>
+    ##  1 Alabama    12-17 2013-2014    9.9 
+    ##  2 Alabama    12-17 2014-2015    9.71
+    ##  3 Alaska     12-17 2013-2014   17.3 
+    ##  4 Alaska     12-17 2014-2015   18.4 
+    ##  5 Arizona    12-17 2013-2014   15.1 
+    ##  6 Arizona    12-17 2014-2015   13.4 
+    ##  7 Arkansas   12-17 2013-2014   12.8 
+    ##  8 Arkansas   12-17 2014-2015   12.1 
+    ##  9 California 12-17 2013-2014   15.0 
+    ## 10 California 12-17 2014-2015   14.1 
+    ## # ℹ 92 more rows
+
+Now, the data set lists (and would plot) the state variable in
+alphabetical order. If I wanted to change the display order so it
+reflected the percentage, as opposed to the name, I could use the factor
+reorder function, telling it to reorganize state by percent in the plot.
+
+``` r
+data_marj =
+  data_marj %>% 
+  filter(age == "12-17") %>% 
+  mutate(State = fct_reorder(State, percent)) %>% 
+ggplot(aes(x = State, y = percent, color = year)) + 
+    geom_point() + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+data_marj
+```
+
+<img src="strings_and_factors_files/figure-gfm/unnamed-chunk-22-1.png" width="90%" />
