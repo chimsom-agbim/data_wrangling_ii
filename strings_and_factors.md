@@ -204,3 +204,197 @@ as.numeric(vec_sex)
     ## [1] 1 1 2 2
 
 ## NSDUH
+
+Wow I was finally able to extract the first table from this data set! If
+you look at the set, the 12+, 12-17, 18-25 corresponds to the age range.
+
+``` r
+url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
+
+table_marj = 
+  read_html(url) |> 
+  html_table() |> 
+  first() |>
+  slice(-1)
+
+table_marj
+```
+
+    ## # A tibble: 56 × 16
+    ##    State     `12+(2013-2014)` `12+(2014-2015)` `12+(P Value)` `12-17(2013-2014)`
+    ##    <chr>     <chr>            <chr>            <chr>          <chr>             
+    ##  1 Total U.… 12.90a           13.36            0.002          13.28b            
+    ##  2 Northeast 13.88a           14.66            0.005          13.98             
+    ##  3 Midwest   12.40b           12.76            0.082          12.45             
+    ##  4 South     11.24a           11.64            0.029          12.02             
+    ##  5 West      15.27            15.62            0.262          15.53a            
+    ##  6 Alabama   9.98             9.60             0.426          9.90              
+    ##  7 Alaska    19.60a           21.92            0.010          17.30             
+    ##  8 Arizona   13.69            13.12            0.364          15.12             
+    ##  9 Arkansas  11.37            11.59            0.678          12.79             
+    ## 10 Californ… 14.49            15.25            0.103          15.03             
+    ## # ℹ 46 more rows
+    ## # ℹ 11 more variables: `12-17(2014-2015)` <chr>, `12-17(P Value)` <chr>,
+    ## #   `18-25(2013-2014)` <chr>, `18-25(2014-2015)` <chr>, `18-25(P Value)` <chr>,
+    ## #   `26+(2013-2014)` <chr>, `26+(2014-2015)` <chr>, `26+(P Value)` <chr>,
+    ## #   `18+(2013-2014)` <chr>, `18+(2014-2015)` <chr>, `18+(P Value)` <chr>
+
+You can also remove columns. Here I am removing the P value column.
+
+``` r
+data_marj = 
+  table_marj |>
+  select(-contains("P Value")) 
+data_marj
+```
+
+    ## # A tibble: 56 × 11
+    ##    State `12+(2013-2014)` `12+(2014-2015)` `12-17(2013-2014)` `12-17(2014-2015)`
+    ##    <chr> <chr>            <chr>            <chr>              <chr>             
+    ##  1 Tota… 12.90a           13.36            13.28b             12.86             
+    ##  2 Nort… 13.88a           14.66            13.98              13.51             
+    ##  3 Midw… 12.40b           12.76            12.45              12.33             
+    ##  4 South 11.24a           11.64            12.02              11.88             
+    ##  5 West  15.27            15.62            15.53a             14.43             
+    ##  6 Alab… 9.98             9.60             9.90               9.71              
+    ##  7 Alas… 19.60a           21.92            17.30              18.44             
+    ##  8 Ariz… 13.69            13.12            15.12              13.45             
+    ##  9 Arka… 11.37            11.59            12.79              12.14             
+    ## 10 Cali… 14.49            15.25            15.03              14.11             
+    ## # ℹ 46 more rows
+    ## # ℹ 6 more variables: `18-25(2013-2014)` <chr>, `18-25(2014-2015)` <chr>,
+    ## #   `26+(2013-2014)` <chr>, `26+(2014-2015)` <chr>, `18+(2013-2014)` <chr>,
+    ## #   `18+(2014-2015)` <chr>
+
+Remember the pivot function? We can use that to reorganize the columns
+so it’s more palatable and I’m going to organize everything that’s not
+state (hence the -state), and I want the column name to be age_year
+because that’s how it’s titled.
+
+``` r
+data_marj = 
+  table_marj |>
+  select(-contains("P Value")) |>
+  pivot_longer(
+    -State,
+    names_to = "age_year", 
+    values_to = "percent")
+data_marj
+```
+
+    ## # A tibble: 560 × 3
+    ##    State      age_year         percent
+    ##    <chr>      <chr>            <chr>  
+    ##  1 Total U.S. 12+(2013-2014)   12.90a 
+    ##  2 Total U.S. 12+(2014-2015)   13.36  
+    ##  3 Total U.S. 12-17(2013-2014) 13.28b 
+    ##  4 Total U.S. 12-17(2014-2015) 12.86  
+    ##  5 Total U.S. 18-25(2013-2014) 31.78  
+    ##  6 Total U.S. 18-25(2014-2015) 32.07  
+    ##  7 Total U.S. 26+(2013-2014)   9.63a  
+    ##  8 Total U.S. 26+(2014-2015)   10.25  
+    ##  9 Total U.S. 18+(2013-2014)   12.87a 
+    ## 10 Total U.S. 18+(2014-2015)   13.41  
+    ## # ℹ 550 more rows
+
+Now let’s say I want to separate the age_year column a little. It
+actually made that one column into 2 columns, and I told it to separate
+when it got to the open parenthesis.
+
+``` r
+data_marj = 
+  table_marj |>
+  select(-contains("P Value")) |>
+  pivot_longer(
+    -State,
+    names_to = "age_year", 
+    values_to = "percent") |>
+  separate(age_year, into = c("age", "year"), sep = "\\(")
+data_marj
+```
+
+    ## # A tibble: 560 × 4
+    ##    State      age   year       percent
+    ##    <chr>      <chr> <chr>      <chr>  
+    ##  1 Total U.S. 12+   2013-2014) 12.90a 
+    ##  2 Total U.S. 12+   2014-2015) 13.36  
+    ##  3 Total U.S. 12-17 2013-2014) 13.28b 
+    ##  4 Total U.S. 12-17 2014-2015) 12.86  
+    ##  5 Total U.S. 18-25 2013-2014) 31.78  
+    ##  6 Total U.S. 18-25 2014-2015) 32.07  
+    ##  7 Total U.S. 26+   2013-2014) 9.63a  
+    ##  8 Total U.S. 26+   2014-2015) 10.25  
+    ##  9 Total U.S. 18+   2013-2014) 12.87a 
+    ## 10 Total U.S. 18+   2014-2015) 13.41  
+    ## # ℹ 550 more rows
+
+I can also code to get rid of the closed parenthesis by telling R to
+replace it with nothing.
+
+``` r
+data_marj = 
+  table_marj |>
+  select(-contains("P Value")) |>
+  pivot_longer(
+    -State,
+    names_to = "age_year", 
+    values_to = "percent") |>
+  separate(age_year, into = c("age", "year"), sep = "\\(") |>
+ mutate(
+    year = str_replace(year, "\\)", ""))
+
+data_marj
+```
+
+    ## # A tibble: 560 × 4
+    ##    State      age   year      percent
+    ##    <chr>      <chr> <chr>     <chr>  
+    ##  1 Total U.S. 12+   2013-2014 12.90a 
+    ##  2 Total U.S. 12+   2014-2015 13.36  
+    ##  3 Total U.S. 12-17 2013-2014 13.28b 
+    ##  4 Total U.S. 12-17 2014-2015 12.86  
+    ##  5 Total U.S. 18-25 2013-2014 31.78  
+    ##  6 Total U.S. 18-25 2014-2015 32.07  
+    ##  7 Total U.S. 26+   2013-2014 9.63a  
+    ##  8 Total U.S. 26+   2014-2015 10.25  
+    ##  9 Total U.S. 18+   2013-2014 12.87a 
+    ## 10 Total U.S. 18+   2014-2015 13.41  
+    ## # ℹ 550 more rows
+
+Let’s do the same for the percent column. I want to get rid of those
+extra letters. Recall, putting the dollar sign means anything that ends
+with that character. (and carrot means starts with). I can also
+simultaneously change the percent column to be a number (double) instead
+of a character
+
+``` r
+data_marj = 
+  table_marj |>
+  select(-contains("P Value")) |>
+  pivot_longer(
+    -State,
+    names_to = "age_year", 
+    values_to = "percent") |>
+  separate(age_year, into = c("age", "year"), sep = "\\(") |>
+  mutate(
+    year = str_replace(year, "\\)", ""),
+    percent = str_replace(percent, "[a-c]$", ""), 
+    percent = as.numeric(c(percent))
+  )
+data_marj
+```
+
+    ## # A tibble: 560 × 4
+    ##    State      age   year      percent
+    ##    <chr>      <chr> <chr>       <dbl>
+    ##  1 Total U.S. 12+   2013-2014   12.9 
+    ##  2 Total U.S. 12+   2014-2015   13.4 
+    ##  3 Total U.S. 12-17 2013-2014   13.3 
+    ##  4 Total U.S. 12-17 2014-2015   12.9 
+    ##  5 Total U.S. 18-25 2013-2014   31.8 
+    ##  6 Total U.S. 18-25 2014-2015   32.1 
+    ##  7 Total U.S. 26+   2013-2014    9.63
+    ##  8 Total U.S. 26+   2014-2015   10.2 
+    ##  9 Total U.S. 18+   2013-2014   12.9 
+    ## 10 Total U.S. 18+   2014-2015   13.4 
+    ## # ℹ 550 more rows
